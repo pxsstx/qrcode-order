@@ -1,221 +1,215 @@
 # QR Code Ordering System
 
-This is a full-stack QR code ordering system using:
+A modern restaurant ordering system where customers can order directly via QR code at their table. Built with **Next.js 13+**, **Bun backend**, **PostgreSQL**, **Redis**, and **MinIO**.
 
-- **Frontend:** Next.js
-- **Backend:** Bun (with Oven Docker image)
-- **Database:** PostgreSQL
-- **Cache:** Redis
-- **File Storage:** MinIO
-- **Containerization:** Docker & Docker Compose
+---
+
+## Features
+
+- Scan QR code to open table-specific menu.
+- Browse available menu items with images.
+- Add/remove items from cart and adjust quantity.
+- Submit orders with optional notes.
+- Manage menus, tables, and orders in backend.
+- Image storage via **MinIO** with presigned URLs.
+- Backend caching with **Redis**.
+
+---
+
+## Tech Stack
+
+- **Frontend**: Next.js 13+, React, TypeScript, Tailwind CSS
+- **Backend**: Bun + Hono framework
+- **Database**: PostgreSQL 16
+- **Cache**: Redis 7
+- **Storage**: MinIO
+- **State Management**: Zustand (cart store)
+- **Icons**: lucide-react
+- **UI Components**: shadcn/ui
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Docker & Docker Compose
+- Node.js / Bun (depending on environment)
+- Optional: bun or yarn
+
+### Clone Repository
+
+```bash
+git clone https://github.com/yourusername/qr-code-ordering.git
+cd qr-code-ordering
+```
+
+---
+
+## Running with Docker
+
+The project includes a `docker-compose.yml` to run **PostgreSQL**, **Redis**, and **MinIO**.
+
+```bash
+docker-compose up -d
+```
+
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+- MinIO API: `localhost:9000`
+- MinIO Console: `localhost:9001` (login with `minioadmin:minioadmin`)
+
+---
+
+## Backend
+
+1. Navigate to backend folder:
+
+```bash
+cd backend
+```
+
+2. Install dependencies (if using Bun):
+
+```bash
+bun install
+```
+
+3. Run development server:
+
+```bash
+bun run --hot src/index.ts
+```
+
+4. Seed database (optional):
+
+```bash
+bun run src/utils/seed.ts
+```
+
+---
+
+## Frontend
+
+1. Navigate to frontend folder:
+
+```bash
+cd frontend
+```
+
+2. Install dependencies:
+
+```bash
+bun install
+# or npm install / yarn install
+```
+
+3. Run development server:
+
+```bash
+bun dev
+# or npm run dev / yarn dev
+```
+
+- Frontend default: `http://localhost:3000`
+- API backend default: `http://localhost:3001/api/v1`
+
+---
+
+## Environment Variables
+
+Create `.env` files for frontend and backend:
+
+**Frontend** (`.env.local`):
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+```
+
+**Backend** (`.env`):
+
+```env
+DATABASE_URL=postgresql://root:password@localhost:5432/qrcode-order
+REDIS_URL=redis://localhost:6379
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+```
+
+---
+
+## API Endpoints (Summary)
+
+**Auth**
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me`
+- `POST /auth/logout`
+- `PATCH /auth/change-password`
+
+**Menu**
+
+- `GET /menus`
+- `GET /menus/:id`
+- `POST /menus`
+- `PUT /menus/:id`
+- `DELETE /menus/:id`
+
+**Order**
+
+- `GET /orders`
+- `GET /orders/:id`
+- `GET /orders/table/:tableId`
+- `POST /orders`
+- `PATCH /orders/:id/status`
+- `DELETE /orders/:id`
+
+**Table**
+
+- `GET /tables`
+- `POST /tables`
+- `PUT /tables/:id`
+- `PATCH /tables/:id/toggle`
+- `DELETE /tables/:id`
+
+**User**
+
+- `GET /users`
+- `GET /users/:id`
+- `POST /users`
+- `PUT /users/:id`
+- `DELETE /users/:id`
+
+**Presign URL**
+
+- `GET /presign/:key`
 
 ---
 
 ## Folder Structure
 
 ```
-project-root/
-├─ backend/
-│  ├─ src/
-│  │  └─ index.ts
-│  ├─ package.json
-│  └─ Dockerfile
-├─ frontend/
-│  ├─ pages/
-│  ├─ package.json
-│  └─ Dockerfile
-└─ docker-compose.yml
+frontend/
+  ├─ app/                  # Next.js pages & layouts
+  ├─ components/           # UI components
+  ├─ lib/                  # API utils, fetch presigned URL
+  ├─ store/                # Zustand cart store
+  └─ public/
+
+backend/
+  ├─ src/
+      ├─ api/              # Hono routes
+      ├─ config/           # Database & MinIO config
+      ├─ utils/            # Helpers, seeding
+      └─ index.ts          # Entry point
 ```
 
 ---
 
-## Prerequisites
+## Notes
 
-- Docker & Docker Compose installed
-- Node.js & Bun (optional for local dev)
-- Internet connection (for pulling Docker images)
-
----
-
-## Setup
-
-### 1. Build Docker Images
-
-```bash
-docker compose build
-```
-
-### 2. Run All Services
-
-```bash
-docker compose up -d
-```
-
-This will start:
-
-- Frontend: [http://localhost:3000](http://localhost:3000)
-- Backend: [http://localhost:3001](http://localhost:3001)
-- PostgreSQL: localhost:5432
-- Redis: localhost:6379
-- MinIO API: [http://localhost:9000](http://localhost:9000)
-- MinIO Console: [http://localhost:9001](http://localhost:9001)
-  - Username: `minioadmin`
-  - Password: `minioadmin`
-
----
-
-### 3. Stop Services
-
-```bash
-docker compose down
-```
-
-> Persistent data in volumes will be kept.
-
----
-
-### 4. Seed Database (Optional)
-
-If you have a seed script:
-
-```bash
-docker compose exec backend bun run src/utils/seed.ts
-```
-
----
-
-## Docker Configuration
-
-### Backend (Bun)
-
-Uses Oven Docker image for Bun runtime.
-
-**Dockerfile example (`backend/Dockerfile`):**
-
-```dockerfile
-FROM oven/bun:latest
-WORKDIR /app
-COPY package.json bun.lockb ./
-RUN bun install
-COPY . .
-EXPOSE 3001
-CMD ["bun", "run", "src/index.ts"]
-```
-
-### Frontend (Next.js)
-
-**Dockerfile example (`frontend/Dockerfile`):**
-
-```dockerfile
-FROM oven/bun:latest
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN bun install
-COPY . .
-RUN bun run build
-EXPOSE 3000
-CMD ["bun", "run", "start"]
-```
-
----
-
-### Docker Compose (`docker-compose.yml`)
-
-```yaml
-version: "3.8"
-
-services:
-  backend:
-    build: ./backend
-    container_name: qr_backend
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./backend:/app
-    networks:
-      - qr_network
-    depends_on:
-      - postgres
-      - redis
-      - minio
-
-  frontend:
-    build: ./frontend
-    container_name: qr_frontend
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-    networks:
-      - qr_network
-    depends_on:
-      - backend
-
-  postgres:
-    image: postgres:16
-    container_name: qr_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: qrcode_order
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - qr_network
-
-  redis:
-    image: redis:7.2
-    container_name: qr_redis
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - qr_network
-
-  minio:
-    image: minio/minio:latest
-    container_name: qr_minio
-    restart: always
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - qr_network
-
-volumes:
-  postgres_data:
-  redis_data:
-  minio_data:
-
-networks:
-  qr_network:
-    driver: bridge
-```
-
----
-
-## Usage
-
-- Access frontend: `http://localhost:3000`
-- Access backend API: `http://localhost:3001`
-- Access MinIO Console: `http://localhost:9001`
-
----
-
-## Development Tips
-
-- **Frontend hot reload:** `npm run dev` locally or adjust Dockerfile to mount volumes
-- **Backend hot reload:** `bun run --hot src/index.ts` inside container
-
----
+- **MinIO Images**: Use presigned URLs to serve images securely in frontend.
+- **Cart State**: Stored in frontend using Zustand; no backend persistence until order submission.
+- **Redis**: Can be used to cache menu or frequently accessed data.
+- **Docker**: Everything required (DB, Redis, MinIO) is included in `docker-compose.yml`.
