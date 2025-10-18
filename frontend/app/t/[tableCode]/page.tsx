@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import type { MenuItem, Table } from "@shared/types";
 import { menuApi, tableApi, orderApi } from "@/lib/api";
@@ -31,6 +31,9 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
+import { fetchPresignedUrl } from "@/lib/fetchPresigned";
+import { restaurantConfig } from "@/config/restaurant";
 
 export default function CustomerOrderPage() {
   const params = useParams();
@@ -42,16 +45,17 @@ export default function CustomerOrderPage() {
   const [orderNotes, setOrderNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [menuImageUrls, setMenuImageUrls] = useState<Record<number, string>>(
+    {}
+  );
 
   const { items, addItem, removeItem, updateQuantity, clearCart, getTotal } =
     useCartStore();
 
-  useEffect(() => {
-    loadData();
-  }, [tableCode]);
-
-  const loadData = async () => {
+  /** โหลดเมนูและ table */
+  const loadData = useCallback(async () => {
     try {
+      setLoading(true);
       const [tablesData, menusData] = await Promise.all([
         tableApi.list(),
         menuApi.list(),
@@ -65,8 +69,31 @@ export default function CustomerOrderPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tableCode]);
 
+  /** โหลด presigned URL ของเมนู */
+  useEffect(() => {
+    const loadMenuImages = async () => {
+      const urls: Record<number, string> = {};
+      for (const menu of menus) {
+        if (menu.image) {
+          try {
+            urls[menu.id] = await fetchPresignedUrl(menu.image);
+          } catch (err) {
+            console.error("Failed to fetch presigned URL:", err);
+          }
+        }
+      }
+      setMenuImageUrls(urls);
+    };
+    if (menus.length > 0) loadMenuImages();
+  }, [menus]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  /** Add menu item to cart */
   const handleAddToCart = (menu: MenuItem) => {
     addItem({
       menuId: menu.id,
@@ -75,6 +102,7 @@ export default function CustomerOrderPage() {
     });
   };
 
+  /** Submit order to server */
   const handleSubmitOrder = async () => {
     if (!table || items.length === 0) return;
 
@@ -93,7 +121,6 @@ export default function CustomerOrderPage() {
       setOrderSuccess(true);
       clearCart();
       setOrderNotes("");
-
       setTimeout(() => setOrderSuccess(false), 3000);
     } catch (error) {
       console.error("Failed to submit order:", error);
@@ -138,13 +165,16 @@ export default function CustomerOrderPage() {
               <UtensilsCrossed className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-base sm:text-lg">Our Restaurant</h1>
+              <h1 className="font-bold text-base sm:text-lg">
+                {restaurantConfig.name}
+              </h1>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Table {table.code}
               </p>
             </div>
           </div>
 
+          {/* Cart Sheet */}
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -182,7 +212,7 @@ export default function CustomerOrderPage() {
                               {item.menu?.name}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              ${item.menu?.price.toFixed(2)}
+                              ฿{item.menu?.price.toFixed(2)}
                             </p>
                           </div>
                           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -242,7 +272,7 @@ export default function CustomerOrderPage() {
 
                     <div className="flex items-center justify-between text-base sm:text-lg font-bold">
                       <span>Total</span>
-                      <span>${getTotal().toFixed(2)}</span>
+                      <span>฿{getTotal().toFixed(2)}</span>
                     </div>
 
                     {orderSuccess && (
@@ -272,16 +302,14 @@ export default function CustomerOrderPage() {
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Menu</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {menus.map((menu) => (
-            <Card key={menu.id} className="overflow-hidden">
-              {menu.imageUrl && (
-                <div className="aspect-video bg-muted">
-                  <img
-                    src={menu.imageUrl || "/placeholder.svg"}
-                    alt={menu.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+            <Card key={menu.id} className="overflow-hidden py-0">
+              <Image
+                src={menuImageUrls[menu.id] || "/placeholder.png"}
+                alt={menu.name}
+                width={200}
+                height={200}
+                className="rounded object-cover w-full h-40"
+              />
               <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -295,7 +323,7 @@ export default function CustomerOrderPage() {
                     )}
                   </div>
                   <p className="text-base sm:text-lg font-bold text-primary flex-shrink-0">
-                    ${menu.price.toFixed(2)}
+                    ฿{menu.price.toFixed(2)}
                   </p>
                 </div>
                 {menu.description && (

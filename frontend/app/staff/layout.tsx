@@ -32,7 +32,7 @@ export default function StaffLayout({
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  });
 
   const checkAuth = async () => {
     try {
@@ -42,7 +42,7 @@ export default function StaffLayout({
         return;
       }
       setUser(userData);
-    } catch (error) {
+    } catch {
       router.push("/login");
     } finally {
       setLoading(false);

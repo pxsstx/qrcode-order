@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orderApi, tableApi, menuApi } from "@/lib/api";
 import { UtensilsCrossed, ShoppingBag, Table2, TrendingUp } from "lucide-react";
+import { Order, Table } from "@shared/types";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -29,9 +30,12 @@ export default function DashboardPage() {
 
       setStats({
         totalOrders: orders.length,
-        pendingOrders: orders.filter((o: any) => o.status === "PENDING").length,
+        pendingOrders: orders.filter(
+          (order: Order) => order.status === "PENDING"
+        ).length,
         totalTables: tables.length,
-        occupiedTables: tables.filter((t: any) => t.isOccupied).length,
+        occupiedTables: tables.filter((table: Table) => table.isOccupied)
+          .length,
         totalMenuItems: menus.length,
       });
     } catch (error) {
@@ -73,7 +77,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-          Welcome back! Here's an overview of your restaurant.
+          Welcome back! Here&apos;s an overview of your restaurant.
         </p>
       </div>
 
