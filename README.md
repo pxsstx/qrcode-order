@@ -123,17 +123,37 @@ Create `.env` files for frontend and backend:
 **Frontend** (`.env.local`):
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+NEXT_PUBLIC_API_URL="http://localhost:3001/api/v1"
+
+REDIS_URL=redis://localhost:6379
+
+NEXT_PUBLIC_MINIO_ENDPOINT=http://localhost:9000
+NEXT_PUBLIC_MINIO_BUCKET=menus
+
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
+MINIO_BUCKET=menus
 ```
 
 **Backend** (`.env`):
 
 ```env
-DATABASE_URL=postgresql://root:password@localhost:5432/qrcode-order
-REDIS_URL=redis://localhost:6379
+# Hono Server
+PORT=3001
+
+# Redis
+REDIS_URL=redis://redis:6379
+
+# Prisma
+DATABASE_URL="postgresql://[root]:[password]@localhost:5432/qrcode-order?schema=public"
+
+JWT_SECRET=
+
 MINIO_ENDPOINT=http://localhost:9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
+MINIO_BUCKET=menus
 ```
 
 ---
